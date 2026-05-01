@@ -1,0 +1,2 @@
+# Swiggy-Builders-Lunchbot
+A group lunch coordination bot where teammates type their food preferences in a chat and an AI agent automatically finds a matching restaurant, helps everyone pick their items and places one combined Swiggy order all through a clean web UI.
