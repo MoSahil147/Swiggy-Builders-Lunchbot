@@ -2,6 +2,8 @@
 # when we will get real Swiggy API will replace these functions
 # will try to match what real Swiggy MCP tools would return
 
+import random
+
 # 1 searching resturant
 
 from collections import UserList
@@ -104,6 +106,23 @@ def place_order(resturant_name):
     total=sum(item["price"]*item["quantity"] for item in cart)
     
     order={
-        
+        # SWG is for Swiggy 
+        "order_id":f"SWG{random.randint(100000, 999999)}",
+        "resturant":resturant_name,
+        "status":"confirmed",
+        "items":cart.copy(),
+        "total":total,
+        #hard coding the ETA. will figue out how to show in real time!
+        "eta":"35 mins",
+        "message":"Order placed successfully! Food is being prepared!"
     }
+    
+    # clear cart as order placed
+    cart.clear()
+    
+    return order
+
+def reset_cart():
+    cart.clear()
+    return{"status":"cart cleared"}
 
