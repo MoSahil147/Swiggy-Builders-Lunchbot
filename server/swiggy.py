@@ -6,8 +6,7 @@ import random
 
 # 1 searching resturant
 
-from collections import UserList
-def search_resturants(cuisine=None, location="Panvel"):
+def search_restaurants(cuisine=None, location="Panvel"):
     # for now just returning hardcoded list of returants
     resturants=[
         {"id":"r1", "name":"Biryani Baba", "cuisine":"Biryani", "rating":4.5, "eta":"30 mins", "min_order":200},
@@ -72,24 +71,24 @@ def search_menu(resturant_id):
 cart=[]
 
 #now updation of cart
-def update_cart(item_id, item_name, price, quantity, user, resturant_id):
+def update_cart(item_id, item_name, price, quantity, user, restaurant_id):
     # will add or maybe update the item in the shared group cart
-    # will check if same user already added the same item, then we will update the quantity instead of duplicating that  
+    # will check if same user already added the same item, then we will update the quantity instead of duplicating that
     for item in cart:
         if item["item_id"]==item_id and item["user"]==user:
             item["quantity"]+=quantity
             return {"status":"updated", "item":item_name, "quantity":item["quantity"], "user":user}
-        
-        cart.append({
-            "item_id":item_id,
-            "item_name":item_name,
-            "price":price,
-            "quantity":quantity,
-            "user":user,
-            "resturant_id":resturant_id,
-        })
-        
-        return {"status":"added", "item":item_name, "quantity":quantity, "user":user}
+
+    cart.append({
+        "item_id":item_id,
+        "item_name":item_name,
+        "price":price,
+        "quantity":quantity,
+        "user":user,
+        "restaurant_id":restaurant_id,
+    })
+
+    return {"status":"added", "item":item_name, "quantity":quantity, "user":user}
     
 # state of the cart
 def get_cart():

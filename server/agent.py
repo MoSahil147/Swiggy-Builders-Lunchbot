@@ -7,7 +7,7 @@ import json
 import os
 from groq import Groq
 from dotenv import load_dotenv
-from swiggy import search_resturants, search_menu, update_cart, get_cart, place_order
+from swiggy import search_restaurants, search_menu, update_cart, get_cart, place_order
 
 load_dotenv()
 
