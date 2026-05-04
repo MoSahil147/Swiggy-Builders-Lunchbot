@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LunchBot — Group Lunch Coordinator</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- header -->
+    <div class="header">
+      <div class="header-left">
+        <span class="logo">🍱</span>
+        <div>
+          <h1>LunchBot</h1>
+          <p>Powered by Swiggy MCP</p>
+        </div>
+      </div>
+      <button class="reset-btn" onclick="resetSession()">Reset</button>
+    </div>
+
+    <!-- who are you selector -->
+    <div class="user-bar">
+      <span class="user-label">You are:</span>
+      <div class="user-pills">
+        <button class="pill active" onclick="selectUser('Fernandes', this)">Fernandes</button>
+        <button class="pill" onclick="selectUser('Ila', this)">Ila</button>
+        <button class="pill" onclick="selectUser('Shaikh', this)">Shaikh</button>
+      </div>
+    </div>
+
+    <!-- chat messages go here -->
+    <div class="chat-window" id="chatWindow">
+      <div class="bot-message">
+        <div class="avatar">🤖</div>
+        <div class="bubble bot-bubble">
+          👋 Dear Ila I'm LunchBot from The LunchBox. Tell me what you're craving today and I'll sort out the group order!
+        </div>
+      </div>
+    </div>
+
+    <!-- input bar -->
+    <div class="input-area">
+      <input
+        type="text"
+        id="msgInput"
+        placeholder="Type your food preference..."
+        onkeydown="if(event.key === 'Enter') sendMessage()"
+      />
+      <button class="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+
+  </div>
+
+  <!-- js is separate -->
+  <script src="/static/app.js"></script>
+
+</body>
+</html>
