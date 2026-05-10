@@ -11,8 +11,8 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# make sure imports work when running from project root
-sys.path.append(os.path.dirname(__file__))
+# add server/ to path so agent and swiggy modules resolve correctly
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'server'))
 
 from agent import run_agent
 from swiggy import reset_cart

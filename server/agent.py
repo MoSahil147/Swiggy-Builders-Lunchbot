@@ -1,52 +1,40 @@
-# thsi is the brain of the bot! 
-# using groq, always helped me to do better things! Love you Groq
-# will use convo history passed from main.py so the agent will have the full context
+# brain of the bot
+# uses groq + llama-3.3-70b-versatile
+# conversation history passed in from main.py on every request
 
-# os and json ke upar nothing!
 import json
 import os
-from groq import Groq
+from groq import Groq, BadRequestError
 from dotenv import load_dotenv
 from swiggy import search_restaurants, search_menu, update_cart, get_cart, place_order
 
 load_dotenv()
 
-# Groq time
-client=Groq(api_key=os.getenv("GROQ_API_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# below will be a tool scheme, in short tool scheme is sexy, tells the LLM what functions it can call and what args they need!
+MODEL = "llama-3.3-70b-versatile"
+
+# FIX: removed search_restaurants from TOOLS entirely.
+# llama-3.3-70b-versatile falls back to a text-based <function=...> format when the
+# conversation is long or involves chaining multiple searches (e.g. Chinese + South Indian
+# + North Indian all in one turn). Groq rejects that format with a 400 error.
+# Instead, we pre-load all restaurant data into the system prompt so the model already
+# knows what's available — no tool call needed for search.
+# Only search_menu, update_cart, get_cart, and place_order remain as tools since
+# those are simpler single-argument calls that work reliably.
+
 TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "search_restaurants",
-            "description": "Search for restaurants. Use this when you need to find restaurants based on cuisine preferences from the team.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "cuisine": {
-                        "type": "string",
-                        "description": "Cuisine type to search for e.g. Biryani, Pizza, Chinese"
-                    },
-                    "location": {
-                        "type": "string",
-                        "description": "Delivery location, default is Panvel"
-                    }
-                }
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
             "name": "search_menu",
-            "description": "Get the menu for a specific restaurant. Use this after picking a restaurant.",
+            "description": "Get the full menu for a restaurant by its ID. Call this once the group has agreed on a restaurant.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "restaurant_id": {
                         "type": "string",
-                        "description": "The ID of the restaurant"
+                        "description": "Restaurant ID from the list e.g. r1, r2, r3, r4, r5"
                     }
                 },
                 "required": ["restaurant_id"]
@@ -57,15 +45,15 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "update_cart",
-            "description": "Add a food item to the group cart for a specific user.",
+            "description": "Add an item to the group cart for a specific person.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "item_id": {"type": "string"},
-                    "item_name": {"type": "string"},
-                    "price": {"type": "number"},
-                    "quantity": {"type": "integer"},
-                    "user": {"type": "string", "description": "Name of the team member ordering this"},
+                    "item_id":       {"type": "string"},
+                    "item_name":     {"type": "string"},
+                    "price":         {"type": "number"},
+                    "quantity":      {"type": "integer"},
+                    "user":          {"type": "string", "description": "Name of the person ordering"},
                     "restaurant_id": {"type": "string"}
                 },
                 "required": ["item_id", "item_name", "price", "quantity", "user", "restaurant_id"]
@@ -76,20 +64,25 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_cart",
-            "description": "Check what's currently in the group cart."
+            "description": "Check everything currently in the group cart.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         }
     },
     {
         "type": "function",
         "function": {
             "name": "place_order",
-            "description": "Place the final group order once everyone has picked their items.",
+            "description": "Place the final group order after everyone has picked their items.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "restaurant_name": {
                         "type": "string",
-                        "description": "Name of the restaurant being ordered from"
+                        "description": "Name of the restaurant"
                     }
                 },
                 "required": ["restaurant_name"]
@@ -98,64 +91,81 @@ TOOLS = [
     }
 ]
 
-# now map time, maps tool name strings to actual python functions
 TOOL_MAP = {
-    "search_restaurants": search_restaurants,
-    "search_menu": search_menu,
-    "update_cart": update_cart,
-    "get_cart": get_cart,
-    "place_order": place_order,
+    "search_menu":  search_menu,
+    "update_cart":  update_cart,
+    "get_cart":     get_cart,
+    "place_order":  place_order,
 }
 
-SYSTEM_PROMPT = """You are LunchBot, a friendly group lunch coordinator for a team.
+# Pre-load restaurant list into the system prompt so the model never needs to call search_restaurants.
+# This avoids the <function=...> format bug entirely for the search step.
+def build_system_prompt():
+    restaurants = search_restaurants()
+    restaurant_lines = "\n".join(
+        f"  - {r['name']} (ID: {r['id']}, Cuisine: {r['cuisine']}, Rating: {r['rating']}, ETA: {r['eta']}, Min order: Rs.{r['min_order']})"
+        for r in restaurants
+    )
+
+    return f"""You are LunchBot, a friendly group lunch coordinator for a team of 3: Fernandes, Ila, and Shaikh.
+
+Available restaurants on Swiggy (Panvel):
+{restaurant_lines}
 
 Your job:
-1. Greet the team and ask everyone what they're in the mood for
-2. Once you have a sense of preferences, search for restaurants that work for the group
-3. Suggest a restaurant and show the menu
-4. Help each person pick their items and add to cart
-5. Once everyone has ordered, place the final group order and share the summary
+1. Collect everyone's cuisine preferences — wait until all 3 have shared what they want
+2. Based on their preferences, suggest the best matching restaurant from the list above (you already know all the restaurants, no need to search)
+3. If preferences differ, suggest the restaurant that best covers the most people, or ask the group to vote
+4. Once a restaurant is agreed on, call search_menu to get the menu and show it to the group
+5. Help each person pick their items and call update_cart for each item
+6. Once everyone has ordered, call get_cart to confirm, then call place_order
+7. Show a final summary with each person's items and the grand total
 
 Rules:
 - Always address people by their name
-- Be friendly, casual, and quick — nobody wants a slow lunch bot
-- If preferences conflict, find a restaurant with variety (North Indian places usually work for everyone)
-- Always confirm before placing the final order
-- Keep responses concise, this is a chat not an essay
-- When showing menus, format them cleanly with prices
-- After placing order, show a clean summary with each person's items and the total"""
+- You already have the restaurant list above — never say you need to search for restaurants
+- Match restaurant suggestions to what people actually asked for
+- Keep responses short and friendly
+- Format menus cleanly with item name and price in Rs.
+- Always confirm the cart before placing the final order"""
+
+
+SYSTEM_PROMPT = build_system_prompt()
+
+
+def _groq_call(messages, use_tools=True):
+    if use_tools:
+        return client.chat.completions.create(
+            model=MODEL, messages=messages,
+            tools=TOOLS, tool_choice="auto",  # type: ignore[arg-type]
+            temperature=0.7, max_tokens=1024
+        )
+    return client.chat.completions.create(
+        model=MODEL, messages=messages,
+        temperature=0.7, max_tokens=1024
+    )
+
 
 def run_agent(conversation_history: list) -> str:
-    # build messages array with system prompt + full history (history is imp)
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + conversation_history
 
-    # first LLM call
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=messages,
-        tools=TOOLS,
-        tool_choice="auto",
-        temperature=0.7,  # slight creativity, keeps responses feeling natural
-        max_tokens=1024
-    )
-    
-    # tool call loop, groq might need multiple rounds to complete a task
-    # e.g. search restaurants then pick one then get menu then add items then place order
+    try:
+        response = _groq_call(messages)
+    except BadRequestError:
+        # model generated malformed <function=...> syntax — retry as plain text
+        return _groq_call(messages, use_tools=False).choices[0].message.content
 
-    while response.choices[0].finish_reason =="tool_calls":
+    # tool call loop — handles chained calls like search_menu -> update_cart -> place_order
+    while response.choices[0].finish_reason == "tool_calls":
         tool_calls = response.choices[0].message.tool_calls
-
-        # add assistant's tool call message to history
         messages.append(response.choices[0].message)
-        
-        # execute each tool call and add results back
-        for tc in tool_calls:
-            fn_name=tc.function.name
-            fn_args=json.loads(tc.function.arguments)
-            
-            print(f"[tool call] {fn_name}({fn_args})")  # helpful for debugging
 
-            # call the actual mock function
+        for tc in tool_calls:
+            fn_name = tc.function.name
+            fn_args = json.loads(tc.function.arguments) or {}
+
+            print(f"[tool call] {fn_name}({fn_args})")
+
             result = TOOL_MAP[fn_name](**fn_args)
 
             messages.append({
@@ -163,15 +173,10 @@ def run_agent(conversation_history: list) -> str:
                 "tool_call_id": tc.id,
                 "content": json.dumps(result)
             })
-            
-        # call LLM again with tool results included
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            tools=TOOLS,
-            tool_choice="auto",
-            temperature=0.7,
-            max_tokens=1024
-        )
+
+        try:
+            response = _groq_call(messages)
+        except BadRequestError:
+            return _groq_call(messages, use_tools=False).choices[0].message.content
 
     return response.choices[0].message.content

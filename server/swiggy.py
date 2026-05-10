@@ -23,7 +23,7 @@ def search_restaurants(cuisine=None, location="Panvel"):
         return filtered if filtered else resturants
     return resturants
 
-def search_menu(resturant_id):
+def search_menu(restaurant_id):
     # will return menu items for a given resturant
     # each item will have enough info for the agent to make decesion
     menus={
@@ -64,7 +64,7 @@ def search_menu(resturant_id):
         ],
     }
     
-    return menus.get(resturant_id,[])
+    return menus.get(restaurant_id,[])
 
 # we need a cart in memory during the session
 # gets reset when /reset will be called
@@ -97,7 +97,7 @@ def get_cart():
     return {"items":cart, "total":total, "item_count":len(cart)}
 
 # final step of placing order
-def place_order(resturant_name):
+def place_order(restaurant_name):
     # finalise the order
     if not cart:
         return {"status":"error", "message":"Cart is empty!"}
@@ -107,7 +107,7 @@ def place_order(resturant_name):
     order={
         # SWG is for Swiggy 
         "order_id":f"SWG{random.randint(100000, 999999)}",
-        "resturant":resturant_name,
+        "restaurant":restaurant_name,
         "status":"confirmed",
         "items":cart.copy(),
         "total":total,
