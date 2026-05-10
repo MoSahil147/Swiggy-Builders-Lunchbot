@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LunchBot — Group Lunch Coordinator</title>
+  <title>LunchBot - Swiggy Builders Club</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
@@ -12,51 +15,82 @@
 
     <!-- header -->
     <div class="header">
-      <div class="header-left">
-        <span class="logo">🍱</span>
-        <div>
-          <h1>LunchBot</h1>
-          <p>Powered by Swiggy MCP</p>
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-icon">🍱</div>
+          <div class="brand-text">
+            <h1>LunchBot</h1>
+            <p>Project Demo for Swiggy</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="live-badge">
+            <span class="live-dot"></span>
+            Live
+          </div>
+          <button class="reset-btn" onclick="resetSession()">Reset</button>
         </div>
       </div>
-      <button class="reset-btn" onclick="resetSession()">Reset</button>
+      <div class="header-strip">
+        <span>🍕 Group Order</span>
+        <span class="strip-dot">●</span>
+        <span>3 members</span>
+        <span class="strip-dot">●</span>
+        <span>Panvel</span>
+      </div>
     </div>
 
-    <!-- who are you selector -->
+    <!-- user selector -->
     <div class="user-bar">
       <span class="user-label">You are:</span>
       <div class="user-pills">
-        <button class="pill active" onclick="selectUser('Fernandes', this)">Fernandes</button>
-        <button class="pill" onclick="selectUser('Ila', this)">Ila</button>
-        <button class="pill" onclick="selectUser('Shaikh', this)">Shaikh</button>
+        <button class="pill active" onclick="selectUser('Fernandes', this)">
+          <span class="pill-avatar" data-color="#FC8019" style="background:#FC8019">F</span>
+          Fernandes
+        </button>
+        <button class="pill" onclick="selectUser('Ila', this)">
+          <span class="pill-avatar" data-color="#282C3F" style="background:#282C3F">I</span>
+          Ila
+        </button>
+        <button class="pill" onclick="selectUser('Shaikh', this)">
+          <span class="pill-avatar" data-color="#e8701a" style="background:#e8701a">S</span>
+          Shaikh
+        </button>
       </div>
     </div>
 
-    <!-- chat messages go here -->
+    <!-- chat window -->
     <div class="chat-window" id="chatWindow">
+      <div class="date-chip">Today</div>
       <div class="bot-message">
         <div class="avatar">🤖</div>
         <div class="bubble bot-bubble">
-          👋 Dear Ila I'm LunchBot from The LunchBox. Tell me what you're craving today and I'll sort out the group order!
+          👋 Hey team! I'm <strong>LunchBot</strong> - your group lunch coordinator.<br/>
+          Tell me what you're craving and I'll sort out the order! 🍕🍛🥗
         </div>
       </div>
     </div>
 
     <!-- input bar -->
     <div class="input-area">
-      <input
-        type="text"
-        id="msgInput"
-        placeholder="Type your food preference..."
-        onkeydown="if(event.key === 'Enter') sendMessage()"
-      />
-      <button class="send-btn" onclick="sendMessage()">Send</button>
+      <div class="input-wrap">
+        <span class="input-icon">🍽️</span>
+        <input
+          type="text"
+          id="msgInput"
+          placeholder="What are you craving today?"
+          onkeydown="if(event.key === 'Enter') sendMessage()"
+        />
+      </div>
+      <button class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+        </svg>
+      </button>
     </div>
 
   </div>
 
-  <!-- js is separate -->
   <script src="/static/app.js"></script>
-
 </body>
 </html>
